@@ -19,7 +19,7 @@ With uget, you can:
 
 You want, you get!
 
-![uget](https://raw.githubusercontent.com/ararog/uget/refs/heads/main/https://github.com/ararog/uget/blob/main/uget.gif)
+![uget](https://raw.githubusercontent.com/ararog/uget/refs/heads/main/uget.gif)
 
 
 ## Install
