@@ -20,6 +20,9 @@ use std::{
 use std::{fs::File, path::Path};
 use url::Url;
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Parser)]
 #[command(
     name = "uget",
