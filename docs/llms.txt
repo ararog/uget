@@ -1,7 +1,14 @@
 # uget
 
 A minimal cli tool to make http requests.
-With uget, you can:
+
+## Install
+
+```sh
+cargo install uget
+```
+
+## Features
 
 * Make http requests
 * Download files
@@ -22,60 +29,44 @@ You want, you get!
 ![uget](https://raw.githubusercontent.com/ararog/uget/refs/heads/main/uget.gif)
 
 
-## Install
-
-```sh
-cargo install uget
-```
-
 ## Usage
 
 ```sh
 uget <url> <body> [OPTIONS]
 ```
 
-## Example
+## Examples
 
 ### GET (will print to stdout and hide progress bar)
-
 ```sh
 uget https://example.com
 ```
 
 ### JSON (defaults to POST method)
-
 ```sh
 echo "{title: 'foo', body: 'bar', userId: 1}" | uget https://example.com
 ```
 
 ### Form (defaults to POST method)
-
 ```sh
 uget https://example.com --field "title=foo" --field "body=bar" --field "userId=1"
 ```
 
 ### Header
-
 ```sh
 uget https://example.com -m POST --header "Content-Type: application/json" "{ title: 'foo', body: 'bar', userId: 1 }"
 ```
 
 ### Bearer
-
 ```sh
 uget https://example.com/users/1 -m DELETE --bearer <token>
 ```
 
 ### Basic
-
 ```sh
 uget https://example.com -m POST --basic <username>:<password>
 ```
 
-## License
+## Blog Posts
 
-MIT
-
-## Author
-
-Rogerio Pereira Araujo <rogerio.araujo@gmail.com>
+- [A Deep Dive into `ararog/uget`: The Modern Command-Line HTTP Client](https://dev.to/rogrio_arajo_55dae16f0d/a-deep-dive-into-araroguget-the-modern-command-line-http-client-3ea7)
