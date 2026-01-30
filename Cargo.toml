@@ -18,12 +18,22 @@ path-guid = "04B654F3-7BD9-4F46-92DA-128844158CAE"
 license = false
 eula = false
 
+[features]
+default = ["http1", "rust-tls"]
+
+rust-tls = ["deboa/tokio-rust-tls"]
+native-tls = ["deboa/tokio-native-tls"]
+
+http1 = ["deboa/http1"]
+http2 = ["deboa/http2"]
+http3 = ["deboa/http3"]
+
 [dependencies]
 assert_cmd = "2.1.2"
 clap = { version = "4.5.54", features = ["derive", "std"], default-features = false}
 colored = "3.1.1"
 colored_json = "5.0.0"
-deboa = { version = "0.0.9" }
+deboa = { version = "0.0.9", path = "../deboa/deboa", features = ["tokio-rt"], default-features = false }
 futures-util = "0.3.31"
 http = "1.4.0"
 http-body-util = "0.1.3"

@@ -2,12 +2,12 @@ use clap::Parser;
 use colored::*;
 use colored_json::prelude::*;
 use deboa::{
-    cert::ClientCert,
+    cert::{Certificate, ContentEncoding, Identity},
     errors::{DeboaError, IoError, RequestError, ResponseError},
     form::{DeboaForm, EncodedForm, MultiPartForm},
     request::{DeboaRequest, DeboaRequestBuilder},
     response::DeboaResponse,
-    Deboa, HttpVersion, Result,
+    Client, ClientBuilder, HttpVersion, Result,
 };
 use futures_util::StreamExt;
 use http::{HeaderName, Method};
@@ -127,7 +127,16 @@ struct Args {
         required = false,
         help = "Set the certificate file to use."
     )]
+    #[cfg(feature = "rust-tls")]
     cert: Option<String>,
+    #[arg(
+        short = 'y',
+        long,
+        required = false,
+        help = "Set the certificate key to use."
+    )]
+    key: Option<String>,
+    #[cfg(feature = "native-tls")]
     #[arg(
         short = 'k',
         long,
@@ -178,15 +187,15 @@ struct Args {
 async fn main() {
     let args = Args::parse();
 
-    let mut client = Deboa::new();
+    let mut client = Client::builder();
 
-    let result = handle_request(args, &mut client).await;
+    let result = handle_request(args, client).await;
     if let Err(err) = result {
         eprintln!("An error occurred: {:#}", err);
     }
 }
 
-async fn handle_request(args: Args, client: &mut Deboa) -> Result<()> {
+async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
     let mut arg_url = args.url;
     let mut arg_body = args.body;
     let arg_method = args.method;
@@ -196,6 +205,9 @@ async fn handle_request(args: Args, client: &mut Deboa) -> Result<()> {
     let arg_basic_auth = args.basic;
     let arg_part = args.part;
     let arg_cert = args.cert;
+    #[cfg(feature = "rust-tls")]
+    let arg_key = args.key;
+    #[cfg(feature = "native-tls")]
     let arg_cert_pw = args.cert_pw;
     let arg_print = args.print;
     let arg_verify = args.verify;
@@ -203,9 +215,47 @@ async fn handle_request(args: Args, client: &mut Deboa) -> Result<()> {
     let arg_bar = args.bar;
     let arg_resume = args.resume;
 
-    if let Some((cert, cert_pw)) = arg_cert.zip(arg_cert_pw) {
-        client.set_client_cert(Some(ClientCert::new(cert, cert_pw, arg_verify)));
-    }
+    let client = if let Some(verify) = arg_verify {
+        let verify = Certificate::from_file(verify.as_str(), ContentEncoding::PEM);
+        if let Err(e) = verify {
+            return Err(DeboaError::Certificate {
+                message: e.to_string(),
+            });
+        }
+
+        client.certificate(verify.unwrap())
+    } else {
+        client
+    };
+
+    #[cfg(feature = "rust-tls")]
+    let client = if let Some((cert, key)) = arg_cert.zip(arg_key) {
+        use deboa::cert::ContentEncoding;
+
+        let identity = Identity::from_pkcs8_file(cert.as_str(), key.as_str(), ContentEncoding::PEM);
+        if let Err(e) = identity {
+            return Err(DeboaError::Identity {
+                message: e.to_string(),
+            });
+        }
+
+        client.identity(identity.unwrap())
+    } else {
+        client
+    };
+
+    #[cfg(feature = "native-tls")]
+    let client = if let Some((cert, cert_pw)) = arg_cert.zip(arg_cert_pw) {
+        let identity = Identity::from_pkcs12_file(cert.as_str(), cert_pw.as_str());
+        if let Err(e) = identity {
+            return Err(DeboaError::Identity {
+                message: e.to_string(),
+            });
+        }
+        client.identity(identity.unwrap())
+    } else {
+        client
+    };
 
     let mut stdin = stdin();
     if !stdin.is_terminal() {
@@ -255,7 +305,7 @@ async fn handle_request(args: Args, client: &mut Deboa) -> Result<()> {
     }
 
     let url = url.unwrap();
-
+    let client = client.build();
     let request = DeboaRequest::to(url.clone())?;
     let mut expected_size = 0;
     if arg_resume.unwrap_or(false) {
@@ -337,7 +387,10 @@ async fn handle_request(args: Args, client: &mut Deboa) -> Result<()> {
                 }
                 _ => todo!(),
             },
-            _ => todo!(),
+            _ => {
+                println!("{}", e);
+                return Ok(());
+            }
         }
     }
 
