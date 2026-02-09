@@ -14,10 +14,10 @@ use http::{HeaderName, Method};
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use std::{
     cmp::min,
-    fs::OpenOptions,
+    fs::{File, OpenOptions},
     io::{stdin, stdout, IsTerminal, Read, Stdin, Write},
+    path::Path,
 };
-use std::{fs::File, path::Path};
 use url::Url;
 
 #[cfg(test)]
