@@ -152,6 +152,16 @@ struct Args {
     )]
     verify: Option<String>,
     #[arg(
+        short = 'I',
+        long,
+        required = false,
+        num_args = 0..=1,
+        require_equals = true,
+        default_missing_value = "true",
+        help = "Bypass certificate verification."
+    )]
+    insecure: Option<String>,
+    #[arg(
         short = 'P',
         long,
         value_parser = ["req", "res", "all", "none"],
@@ -214,6 +224,7 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
     let arg_save = args.save;
     let arg_bar = args.bar;
     let arg_resume = args.resume;
+    let arg_insecure = args.insecure;
 
     let client = if let Some(verify) = arg_verify {
         let verify = Certificate::from_file(verify.as_str(), ContentEncoding::PEM);
@@ -224,6 +235,12 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
         }
 
         client.certificate(verify.unwrap())
+    } else {
+        client
+    };
+
+    let client = if arg_insecure.is_some() {
+        client.skip_cert_verification(true)
     } else {
         client
     };
