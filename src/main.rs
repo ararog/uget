@@ -197,7 +197,7 @@ struct Args {
 async fn main() {
     let args = Args::parse();
 
-    let mut client = Client::builder();
+    let client = Client::builder();
 
     let result = handle_request(args, client).await;
     if let Err(err) = result {
@@ -394,11 +394,7 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
                 }
             },
             DeboaError::Request(inner_error) => match inner_error {
-                RequestError::Send {
-                    message,
-                    url: _,
-                    method: _,
-                } => {
+                RequestError::Send { message, url: _ } => {
                     print!("{}", message);
                     return Ok(());
                 }
@@ -533,7 +529,7 @@ fn set_basic_auth(
         let mut password = String::new();
         println!("Enter password: ");
         if stdin.read_line(&mut password).is_ok() {
-            request.basic_auth(&username, password.trim())
+            request.basic_auth(username, password.trim())
         } else {
             eprintln!("Password not provided, exiting.");
             std::process::exit(1);
@@ -556,7 +552,7 @@ fn set_bearer_auth(
             std::process::exit(1);
         }
     } else {
-        request.bearer_auth(&bearer_auth)
+        request.bearer_auth(bearer_auth)
     }
 }
 
@@ -640,16 +636,18 @@ async fn save_to_file(
         }
         while let Some(frame) = stream.next().await {
             if let Ok(frame) = frame {
-                let new = min(downloaded + frame.len() as u64, content_length);
-                downloaded = new;
-                if let Some(pb) = pb {
-                    pb.set_position(new);
-                }
-                let result = file.write(&frame);
-                if let Err(e) = result {
-                    return Err(DeboaError::Io(IoError::File {
-                        message: format!("Failed to write to file: {}", e),
-                    }));
+                if let Some(data) = frame.data_ref() {
+                    let new = min(downloaded + data.len() as u64, content_length);
+                    downloaded = new;
+                    if let Some(pb) = pb {
+                        pb.set_position(new);
+                    }
+                    let result = file.write(data);
+                    if let Err(e) = result {
+                        return Err(DeboaError::Io(IoError::File {
+                            message: format!("Failed to write to file: {}", e),
+                        }));
+                    }
                 }
             }
         }
@@ -689,20 +687,22 @@ async fn print_to_stdout(
         let mut stream = response.stream();
         while let Some(frame) = stream.next().await {
             if let Ok(frame) = frame {
-                if !content_type.to_lowercase().contains("text/event-stream") {
-                    let new = min(downloaded + frame.len() as u64, content_length);
-                    downloaded = new;
-                    if !stdout.is_terminal() {
-                        if let Some(pb) = pb {
-                            pb.set_position(new);
+                if let Some(data) = frame.data_ref() {
+                    if !content_type.to_lowercase().contains("text/event-stream") {
+                        let new = min(downloaded + data.len() as u64, content_length);
+                        downloaded = new;
+                        if !stdout.is_terminal() {
+                            if let Some(pb) = pb {
+                                pb.set_position(new);
+                            }
                         }
                     }
-                }
-                let result = stdout.write(&frame);
-                if let Err(e) = result {
-                    return Err(DeboaError::Io(IoError::Stdout {
-                        message: format!("Failed to write to stdout: {}", e),
-                    }));
+                    let result = stdout.write(data);
+                    if let Err(e) = result {
+                        return Err(DeboaError::Io(IoError::Stdout {
+                            message: format!("Failed to write to stdout: {}", e),
+                        }));
+                    }
                 }
             }
         }
