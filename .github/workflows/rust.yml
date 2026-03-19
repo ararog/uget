@@ -11,7 +11,7 @@ env:
 
 jobs:
   test-matrix:
-    name: Build and Test${{ matrix.platform.os-name }} with rust ${{ matrix.toolchain }}
+    name: Test ${{ matrix.platform.os-name }} with rust ${{ matrix.toolchain }}
     runs-on: ${{ matrix.platform.runs-on }}
     strategy:
       fail-fast: false
