@@ -7,8 +7,9 @@ use deboa::{
     form::{DeboaForm, EncodedForm, MultiPartForm},
     request::{DeboaRequest, DeboaRequestBuilder},
     response::DeboaResponse,
-    Client, ClientBuilder, HttpVersion, Result,
+    HttpClient, HttpVersion, Result,
 };
+use deboa_tokio::{Client, ClientBuilder};
 use futures_util::StreamExt;
 use http::{HeaderName, Method};
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
@@ -394,7 +395,7 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
                 }
             },
             DeboaError::Request(inner_error) => match inner_error {
-                RequestError::Send { message, url: _ } => {
+                RequestError::Send { message } => {
                     print!("{}", message);
                     return Ok(());
                 }

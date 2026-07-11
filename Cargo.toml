@@ -10,7 +10,7 @@ readme = "README.md"
 license = "MIT"
 keywords = ["http", "networking", "client", "fetch", "rest"]
 publish = true
-rust-version = "1.70.0"
+rust-version = "1.75.0"
 
 [package.metadata.wix]
 upgrade-guid = "17814438-FF90-4394-8ABD-98DA4923CAB7"
@@ -21,19 +21,20 @@ eula = false
 [features]
 default = ["http3", "rust-tls"]
 
-rust-tls = ["deboa/tokio-rust-tls"]
-native-tls = ["deboa/tokio-native-tls"]
+rust-tls = ["deboa-tokio/rust-tls", "deboa-tokio/default-rustls-provider", "deboa-tokio/default-rustls-verifier"]
+native-tls = ["deboa-tokio/native-tls"]
 
-http1 = ["deboa/http1"]
-http2 = ["deboa/http2"]
-http3 = ["deboa/http3"]
+http1 = ["deboa-tokio/http1"]
+http2 = ["deboa-tokio/http2"]
+http3 = ["deboa-tokio/http3"]
 
 [dependencies]
 assert_cmd = "2.2.2"
 clap = { version = "4.6.1", features = ["derive", "std"], default-features = false}
 colored = "3.1.1"
 colored_json = "5.0.0"
-deboa = { version = "0.1.0-beta.15", features = ["tokio-rt"], default-features = false }
+deboa = { version = "0.1.0-beta.19", default-features = false }
+deboa-tokio = { version = "0.1.0-beta.7", optional = true, default-features = false }
 futures-util = "0.3.31"
 http = "1.4.1"
 http-body-util = "0.1.3"
