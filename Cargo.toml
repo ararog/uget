@@ -1,6 +1,6 @@
 [package]
 name = "uget"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 authors = ["Rogerio Araújo <rogerio.araujo@gmail.com>"]
 repository = "https://github.com/ararog/uget"
@@ -19,7 +19,7 @@ license = false
 eula = false
 
 [features]
-default = ["http3", "rust-tls"]
+default = ["http1", "http2", "http3", "rust-tls"]
 
 rust-tls = ["deboa-tokio/rust-tls", "deboa-tokio/default-rustls-provider", "deboa-tokio/default-rustls-verifier"]
 native-tls = ["deboa-tokio/native-tls"]
