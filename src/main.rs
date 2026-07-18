@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{builder::RangedI64ValueParser, Parser};
 use colored::*;
 use colored_json::prelude::*;
 use deboa::{
@@ -65,6 +65,8 @@ Options:
                      Print request or response.
     -r, --resume <RESUME>
                      Resume download from a previous one.
+    --http       <VERSION>
+                     Use HTTP version (1, 2 or 3).
 "#
 )]
 struct Args {
@@ -192,6 +194,16 @@ struct Args {
         help = "Resume download from a previous one."
     )]
     resume: Option<bool>,
+    #[arg(
+        long,
+        value_parser = RangedI64ValueParser::<u8>::new().range(1..=3),
+        required = false,
+        num_args = 0..=1,
+        require_equals = true,
+        default_value = "1",
+        help = "Http version to use (1, 2 or 3)."
+    )]
+    http: Option<u8>,
 }
 
 #[tokio::main]
@@ -226,6 +238,19 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
     let arg_bar = args.bar;
     let arg_resume = args.resume;
     let arg_insecure = args.insecure;
+    let arg_http = args.http;
+
+    let http_version = match arg_http {
+        Some(value) => match value {
+            1 => HttpVersion::Http1,
+            2 => HttpVersion::Http2,
+            3 => HttpVersion::Http3,
+            _ => HttpVersion::Http1,
+        },
+        None => HttpVersion::Http1,
+    };
+
+    let client = client.protocol(http_version);
 
     let client = if let Some(verify) = arg_verify {
         let verify = Certificate::from_file(verify.as_str(), ContentEncoding::PEM);

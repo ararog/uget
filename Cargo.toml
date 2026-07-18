@@ -33,8 +33,8 @@ assert_cmd = "2.2.2"
 clap = { version = "4.6.1", features = ["derive", "std"], default-features = false}
 colored = "3.1.1"
 colored_json = "5.0.0"
-deboa = { version = "0.1.0-beta.19", default-features = false }
-deboa-tokio = { version = "0.1.0-beta.7", optional = true, default-features = false }
+deboa = { version = "0.1.0-beta.25", default-features = false }
+deboa-tokio = { version = "0.1.0-beta.10", optional = true, default-features = false }
 futures-util = "0.3.31"
 http = "1.4.1"
 http-body-util = "0.1.3"
