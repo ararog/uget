@@ -1,17 +1,23 @@
 use clap::{builder::RangedI64ValueParser, Parser};
 use colored::*;
 use colored_json::prelude::*;
+#[cfg(feature = "native-tls")]
+use deboa::cert::IdentityNativeExt as _;
 use deboa::{
-    cert::{Certificate, ContentEncoding, Identity},
+    cert::{CertificateExt as _, ContentEncoding},
     errors::{DeboaError, IoError, RequestError, ResponseError},
     form::{DeboaForm, EncodedForm, MultiPartForm},
     request::{DeboaRequest, DeboaRequestBuilder},
     response::DeboaResponse,
-    HttpClient, HttpVersion, Result,
+    ClientBuilder, HttpClient, Result,
 };
-use deboa_tokio::{Client, ClientBuilder};
+use deboa_tokio::{
+    cert::{DeboaCertificate, DeboaIdentity},
+    client::{dns::DefaultDnsResolver, http::conn::pool::HttpConnectionPool},
+    Client,
+};
 use futures_util::StreamExt;
-use http::{HeaderName, Method};
+use http::{HeaderName, Method, Version};
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use std::{
     cmp::min,
@@ -218,7 +224,10 @@ async fn main() {
     }
 }
 
-async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
+async fn handle_request(
+    args: Args,
+    client: ClientBuilder<DeboaIdentity, DeboaCertificate, HttpConnectionPool, DefaultDnsResolver>,
+) -> Result<()> {
     let mut arg_url = args.url;
     let mut arg_body = args.body;
     let arg_method = args.method;
@@ -240,20 +249,18 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
     let arg_insecure = args.insecure;
     let arg_http = args.http;
 
-    let http_version = match arg_http {
+    let version = match arg_http {
         Some(value) => match value {
-            1 => HttpVersion::Http1,
-            2 => HttpVersion::Http2,
-            3 => HttpVersion::Http3,
-            _ => HttpVersion::Http1,
+            1 => Version::HTTP_11,
+            2 => Version::HTTP_2,
+            3 => Version::HTTP_3,
+            _ => Version::HTTP_11,
         },
-        None => HttpVersion::Http1,
+        None => Version::HTTP_11,
     };
 
-    let client = client.protocol(http_version);
-
     let client = if let Some(verify) = arg_verify {
-        let verify = Certificate::from_file(verify.as_str(), ContentEncoding::PEM);
+        let verify = DeboaCertificate::from_file(verify.as_str(), ContentEncoding::PEM).await;
         if let Err(e) = verify {
             return Err(DeboaError::Certificate {
                 message: e.to_string(),
@@ -273,9 +280,10 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
 
     #[cfg(feature = "rust-tls")]
     let client = if let Some((cert, key)) = arg_cert.zip(arg_key) {
-        use deboa::cert::ContentEncoding;
+        use deboa::cert::{ContentEncoding, IdentityExt as _};
 
-        let identity = Identity::from_pkcs8_file(cert.as_str(), key.as_str(), ContentEncoding::PEM);
+        let identity =
+            DeboaIdentity::from_pkcs8_file(cert.as_str(), key.as_str(), ContentEncoding::PEM).await;
         if let Err(e) = identity {
             return Err(DeboaError::Identity {
                 message: e.to_string(),
@@ -289,7 +297,7 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
 
     #[cfg(feature = "native-tls")]
     let client = if let Some((cert, cert_pw)) = arg_cert.zip(arg_cert_pw) {
-        let identity = Identity::from_pkcs12_file(cert.as_str(), cert_pw.as_str());
+        let identity = DeboaIdentity::from_pkcs12_file(cert.as_str(), cert_pw.as_str());
         if let Err(e) = identity {
             return Err(DeboaError::Identity {
                 message: e.to_string(),
@@ -350,6 +358,7 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
     let url = url.unwrap();
     let client = client.build();
     let request = DeboaRequest::to(url.clone())?;
+
     let mut expected_size = 0;
     if arg_resume.unwrap_or(false) {
         let request = request.method(http::Method::HEAD);
@@ -366,10 +375,10 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
         request
     };
 
-    let saved_file_name = get_file_from_url(&url)?;
-    let saved_file = Path::new(&saved_file_name);
-    let (request, actual_size) = if saved_file.exists() {
-        setup_resume_download(request, saved_file, expected_size)?
+    let file_name_to_save = get_file_from_url(&url)?;
+    let file_to_save = Path::new(&file_name_to_save);
+    let (request, actual_size) = if file_to_save.exists() {
+        setup_resume_download(request, &file_to_save, expected_size)?
     } else {
         (request, 0)
     };
@@ -377,9 +386,9 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
     let request = if let Some(body) = arg_body {
         request.text(&body)
     } else if let Some(fields) = arg_fields {
-        set_encoded_form(request, fields)
+        set_encoded_form(request, fields)?
     } else if let Some(part) = arg_part {
-        set_multi_part_form(request, part)
+        set_multi_part_form(request, part)?
     } else {
         request
     };
@@ -396,7 +405,7 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
         request
     };
 
-    let request = request.method(http_method);
+    let request = request.method(http_method).version(version);
     let request = request.build()?;
 
     if let Some(print) = arg_print.as_ref() {
@@ -436,7 +445,7 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
     let response = response.unwrap();
 
     if let Some(print) = arg_print.as_ref() {
-        print_response(&response, print, client.protocol());
+        print_response(&response, print);
     }
 
     let content_type = response.content_type().unwrap_or_default();
@@ -451,6 +460,7 @@ async fn handle_request(args: Args, client: ClientBuilder) -> Result<()> {
     if let Some(mut file_to_save) = arg_save {
         save_to_file(
             response,
+            &url,
             actual_size,
             content_length,
             &mut file_to_save,
@@ -520,7 +530,10 @@ fn setup_resume_download(
     }
 }
 
-fn set_encoded_form(request: DeboaRequestBuilder, fields: Vec<String>) -> DeboaRequestBuilder {
+fn set_encoded_form(
+    request: DeboaRequestBuilder,
+    fields: Vec<String>,
+) -> Result<DeboaRequestBuilder> {
     let mut form = EncodedForm::builder();
     for field in fields {
         let pairs = field.split_once('=');
@@ -531,7 +544,10 @@ fn set_encoded_form(request: DeboaRequestBuilder, fields: Vec<String>) -> DeboaR
     request.form(form.into())
 }
 
-fn set_multi_part_form(request: DeboaRequestBuilder, part: Vec<String>) -> DeboaRequestBuilder {
+fn set_multi_part_form(
+    request: DeboaRequestBuilder,
+    part: Vec<String>,
+) -> Result<DeboaRequestBuilder> {
     let mut form = MultiPartForm::builder();
     for part in part {
         let pairs = part.split_once('=');
@@ -587,7 +603,7 @@ fn print_request(request: &DeboaRequest, print: &str) {
         println!(
             "\n\n{} {}",
             request.method().to_string().blue(),
-            request.url().to_string().white().bold()
+            request.uri().to_string().white().bold()
         );
         for (key, value) in request.headers() {
             println!(
@@ -599,11 +615,10 @@ fn print_request(request: &DeboaRequest, print: &str) {
     }
 }
 
-fn print_response(response: &DeboaResponse, print: &str, protocol: &HttpVersion) {
+fn print_response(response: &DeboaResponse, print: &str) {
     if print == "res" || print == "all" {
         println!(
-            "\n\n{} {} {}",
-            protocol.to_string().blue(),
+            "\n\n{} {}",
             response.status().as_str().to_string().white().bold(),
             response
                 .status()
@@ -638,6 +653,7 @@ fn setup_progress_bar(has_progress_bar: bool, content_length: u64) -> Option<Pro
 
 async fn save_to_file(
     response: DeboaResponse,
+    url: &url::Url,
     actual_size: u64,
     content_length: u64,
     file_to_save: &mut String,
@@ -645,7 +661,7 @@ async fn save_to_file(
 ) -> Result<()> {
     let mut downloaded = actual_size;
     if file_to_save == "none" {
-        *file_to_save = get_file_from_url(response.url())?;
+        *file_to_save = get_file_from_url(url)?;
     }
 
     let file_path = Path::new(file_to_save);
