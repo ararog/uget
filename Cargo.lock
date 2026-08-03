@@ -47,17 +47,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-trait"
-version = "0.1.91"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae36dc4177970ef04fde5178d3e2429882def40e57a451f919c098f72baa6cec"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 3.0.3",
-]
-
-[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -85,12 +74,6 @@ dependencies = [
  "fs_extra",
  "pkg-config",
 ]
-
-[[package]]
-name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "base64"
@@ -283,7 +266,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fcf9d17f9a19c7149b85491abd625bfbd760d40af973732351625573256d68ef"
 dependencies = [
  "async-lock",
- "base64 0.23.0",
+ "base64",
  "bytes",
  "cookie",
  "futures",
@@ -322,13 +305,13 @@ dependencies = [
 
 [[package]]
 name = "deboa-tokio"
-version = "0.1.0-beta.15"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e8460dce7128eb16245ef967f5a2465f4636da3fa1e16434d53686f31a41f02"
+checksum = "60ab24285cccf22cb5e08d6bdbaab1cb0a6c44e5ef7dabe6a69cd47278d6ce97"
 dependencies = [
+ "async-lock",
  "async-native-tls",
- "async-trait",
- "base64 0.22.1",
+ "base64",
  "bytes",
  "cookie",
  "deboa",
@@ -354,6 +337,7 @@ dependencies = [
  "rustls-native-certs",
  "rustls-pki-types",
  "serde",
+ "tackle",
  "thiserror",
  "time",
  "tokio",
