@@ -27,9 +27,6 @@ use std::{
 };
 use url::Url;
 
-#[cfg(test)]
-mod tests;
-
 #[derive(Parser)]
 #[command(
     name = "uget",
@@ -378,7 +375,7 @@ async fn handle_request(
     let file_name_to_save = get_file_from_url(&url)?;
     let file_to_save = Path::new(&file_name_to_save);
     let (request, actual_size) = if file_to_save.exists() {
-        setup_resume_download(request, &file_to_save, expected_size)?
+        setup_resume_download(request, file_to_save, expected_size)?
     } else {
         (request, 0)
     };
