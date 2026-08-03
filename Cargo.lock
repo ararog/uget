@@ -885,7 +885,6 @@ dependencies = [
  "portable-atomic",
  "unicode-width",
  "unit-prefix",
- "web-time",
 ]
 
 [[package]]
@@ -1695,7 +1694,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "uget"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "assert_cmd",
  "clap",
