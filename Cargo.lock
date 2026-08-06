@@ -298,9 +298,9 @@ dependencies = [
 
 [[package]]
 name = "deboa-h3"
-version = "0.1.1-beta.1"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc98c75a4ba6fc869b6fac4be2a12d85f2258649f1bd8259c33616d92605ba53"
+checksum = "ea8cd96d630c7055adae25c2f3db21e0247a1059396506ccca7732136b4417fd"
 dependencies = [
  "bytes",
  "deboa",
@@ -312,9 +312,9 @@ dependencies = [
 
 [[package]]
 name = "deboa-tokio"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60ab24285cccf22cb5e08d6bdbaab1cb0a6c44e5ef7dabe6a69cd47278d6ce97"
+checksum = "633bb0218b77c871452a5cece79cb4549b8016489658fa4b15e60d5235847bcd"
 dependencies = [
  "async-lock",
  "async-native-tls",
@@ -327,6 +327,7 @@ dependencies = [
  "futures-rustls",
  "h3",
  "h3-quinn",
+ "hashbrown",
  "http",
  "http-body",
  "http-body-util",
