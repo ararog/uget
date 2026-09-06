@@ -11,6 +11,10 @@ use deboa::{
     response::DeboaResponse,
     ClientBuilder, HttpClient, Result,
 };
+use deboa_extras::hook::{
+    redirect::Redirect,
+    retry::{strategy::FixedIntervalRetryStrategy, Retry, Sleeper},
+};
 use deboa_tokio::{
     cert::{DeboaCertificate, DeboaIdentity},
     client::{dns::DefaultDnsResolver, http::conn::pool::HttpConnectionPool},
@@ -24,8 +28,18 @@ use std::{
     fs::{File, OpenOptions},
     io::{stdin, stdout, IsTerminal, Read, Stdin, Write},
     path::Path,
+    time::Duration,
 };
 use url::Url;
+
+#[derive(Clone, Copy, Default)]
+pub struct TokioSleeper;
+
+impl Sleeper for TokioSleeper {
+    async fn sleep(&self, duration: Duration) {
+        tokio::time::sleep(duration).await;
+    }
+}
 
 #[derive(Parser)]
 #[command(
@@ -40,6 +54,9 @@ Usage:
 Options:
     -h, --help       Print help information
     -V, --version    Print version information
+
+  Request Options:
+  
     -m, --method <METHOD>
                      HTTP method to use
     -b, --body   <BODY>
@@ -56,6 +73,9 @@ Options:
                      Set the file to save the response body.
     -p, --part   <PART>
                      Set the part of multipart/form-data.
+  
+  Certificate Options:
+  
     -c, --cert   <CERT>
                      Set the certificate file to use.
     -k, --key    <KEY>
@@ -64,12 +84,27 @@ Options:
                      Set the private key password.
     -v, --verify <VERIFY>
                      Set the ca certificate file to use (pem format).
+    -i, --insecure
+                     Bypass certificate verification.
+  
+  Display Options: 
+  
     -P, --print  <PRINT>
                      Print request or response.
-    -r, --resume <RESUME>
-                     Resume download from a previous one.
+    --bar       
+                     Show progress bar.
+  Protocol Options:
+
     --http       <VERSION>
                      Use HTTP version (1, 2 or 3).
+    --prior-knowledge
+                     Set the prior knowledge for HTTP/3, should be used with --http flag.
+    -r, --resume <RESUME>
+                     Resume download from a previous one.
+    -R, --retry  <RETRY>
+                     Retry the request on failure N times.
+    -F, --follow <NUM_FOLLOW>  
+                     Follow redirects, if a value is ommited, follow with a default of 50 times.
 "#
 )]
 struct Args {
@@ -198,6 +233,16 @@ struct Args {
     )]
     resume: Option<bool>,
     #[arg(
+        short = 'F',
+        long,
+        required = false,
+        num_args = 0..=1,
+        require_equals = true,
+        default_missing_value = "50",
+        help = "Follow redirects with a maximum of N times, if N is omitted, follow with a default of 50 times."
+    )]
+    follow: Option<usize>,
+    #[arg(
         long,
         value_parser = RangedI64ValueParser::<u8>::new().range(1..=3),
         required = false,
@@ -207,14 +252,23 @@ struct Args {
         help = "Http version to use (1, 2 or 3)."
     )]
     http: Option<u8>,
+    #[arg(
+        short = 'R',
+        long,
+        value_parser = RangedI64ValueParser::<u8>::new().range(1..=3),
+        required = false,
+        num_args = 0..=1,
+        require_equals = true,
+        default_value = "1",
+        help = "Number of times to retry the request on failure."
+    )]
+    retries: Option<u8>,
 }
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-
     let client = Client::builder();
-
     let result = handle_request(args, client).await;
     if let Err(err) = result {
         eprintln!("An error occurred: {:#}", err);
@@ -245,6 +299,8 @@ async fn handle_request(
     let arg_resume = args.resume;
     let arg_insecure = args.insecure;
     let arg_http = args.http;
+    let arg_retries = args.retries;
+    let arg_follow = args.follow;
 
     let version = match arg_http {
         Some(value) => match value {
@@ -354,6 +410,14 @@ async fn handle_request(
 
     let url = url.unwrap();
     let client = client.build();
+
+    let retries = arg_retries.unwrap_or(1) as usize;
+    let strategy = FixedIntervalRetryStrategy::new(retries, Duration::from_secs(1));
+    let client = client.chain(Retry::new(strategy, TokioSleeper::default()));
+
+    let follow = arg_follow.unwrap_or(0) as usize;
+    let client = client.chain(Redirect::new(follow));
+
     let request = DeboaRequest::to(url.clone())?;
 
     let mut expected_size = 0;
@@ -367,7 +431,7 @@ async fn handle_request(
     let http_method = method.unwrap();
     let request = DeboaRequest::to(url.clone())?;
     let request = if let Some(header) = arg_header {
-        set_request_headers(request, header)
+        set_request_headers(request, header)?
     } else {
         request
     };
@@ -391,13 +455,13 @@ async fn handle_request(
     };
 
     let request = if let Some(bearer_auth) = arg_bearer_auth {
-        set_bearer_auth(request, &bearer_auth, &mut stdin)
+        set_bearer_auth(request, &bearer_auth, &mut stdin)?
     } else {
         request
     };
 
     let request = if let Some(basic_auth) = arg_basic_auth {
-        set_basic_auth(request, &basic_auth, &mut stdin)
+        set_basic_auth(request, &basic_auth, &mut stdin)?
     } else {
         request
     };
@@ -486,20 +550,21 @@ fn read_body_from_stdin(stdin: &mut Stdin) -> Result<String> {
     Ok(stdin_body)
 }
 
-fn set_request_headers(request: DeboaRequestBuilder, headers: Vec<String>) -> DeboaRequestBuilder {
-    headers.iter().fold(request, |request, header| {
+fn set_request_headers(
+    request: DeboaRequestBuilder,
+    headers: Vec<String>,
+) -> Result<DeboaRequestBuilder> {
+    headers.iter().fold(Ok(request), |req, header| {
         let pairs = header.split_once(':');
-        let request = if let Some((key, value)) = pairs {
-            let header_name = HeaderName::from_bytes(key.as_bytes());
-            if let Err(e) = header_name {
-                eprintln!("Error: {:#}", e);
-                return request;
-            }
-            request.header(header_name.unwrap(), value)
+        if let Some((key, value)) = pairs {
+            let header_name =
+                HeaderName::from_bytes(key.as_bytes()).map_err(|e| DeboaError::Cookie {
+                    message: e.to_string(),
+                })?;
+            req?.header(header_name, value)
         } else {
-            request
-        };
-        request
+            req
+        }
     })
 }
 
@@ -520,7 +585,7 @@ fn setup_resume_download(
         let request = request.header(
             http::header::RANGE,
             format!("bytes={}-{}", actual_size, expected_size).as_str(),
-        );
+        )?;
         Ok((request, actual_size))
     } else {
         Ok((request, 0))
@@ -535,7 +600,7 @@ fn set_encoded_form(
     for field in fields {
         let pairs = field.split_once('=');
         if let Some((key, value)) = pairs {
-            form.field(key, value);
+            form = form.field(key, value);
         }
     }
     request.form(form.into())
@@ -549,7 +614,7 @@ fn set_multi_part_form(
     for part in part {
         let pairs = part.split_once('=');
         if let Some((key, value)) = pairs {
-            form.field(key, value);
+            form = form.field(key, value);
         }
     }
     request.form(form.into())
@@ -559,7 +624,7 @@ fn set_basic_auth(
     request: DeboaRequestBuilder,
     basic_auth: &str,
     stdin: &mut Stdin,
-) -> DeboaRequestBuilder {
+) -> Result<DeboaRequestBuilder> {
     let result = basic_auth.split_once(':');
     if let Some((username, password)) = result {
         request.basic_auth(username, password)
@@ -580,7 +645,7 @@ fn set_bearer_auth(
     request: DeboaRequestBuilder,
     bearer_auth: &str,
     stdin: &mut Stdin,
-) -> DeboaRequestBuilder {
+) -> Result<DeboaRequestBuilder> {
     if bearer_auth == "none" {
         let mut token = String::new();
         println!("Enter token: ");

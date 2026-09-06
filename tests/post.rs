@@ -1,7 +1,7 @@
 use assert_cmd::Command;
 
 #[test]
-fn simple_post() {
+fn test_simple_post() {
     #[allow(deprecated)]
     let mut cmd = Command::cargo_bin("uget").unwrap();
     cmd.arg("https://httpbin.org/post");
@@ -11,7 +11,7 @@ fn simple_post() {
 }
 
 #[test]
-fn post_from_stdin() {
+fn test_post_from_stdin() {
     #[allow(deprecated)]
     let mut cmd = Command::cargo_bin("uget").unwrap();
     cmd.arg("https://jsonplaceholder.typicode.com/posts");
