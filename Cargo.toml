@@ -38,22 +38,14 @@ clap = { version = "4.6.6", features = [
 ], default-features = false }
 colored = "3.1.1"
 colored_json = "5.0.0"
-#deboa = { path = "../deboa/deboa", default-features = false }
-deboa = { version = "0.1.5-beta.2", default-features = false }
-#deboa-extras = { path = "../deboa-contrib/deboa-extras", default-features = false, features = [
-#    "json",
-#    "xml",
-#    "hooks",
-#    "sse",
-#] }
-deboa-extras = { version = "0.1.1-beta.2", default-features = false, features = [
+deboa = { version = "0.1.5-beta.3", default-features = false }
+deboa-extras = { version = "0.1.1-beta.3", default-features = false, features = [
     "json",
     "xml",
     "hooks",
     "sse",
 ] }
-#deboa-tokio = { path = "../deboa-tokio/deboa-tokio", optional = true, default-features = false }
-deboa-tokio = { version = "0.1.4-beta.3", optional = true, default-features = false }
+deboa-tokio = { version = "0.1.4-beta.4", optional = true, default-features = false }
 futures-util = "0.3.31"
 http = "1.5.0"
 http-body-util = "0.1.5"
@@ -61,7 +53,7 @@ indicatif = { version = "0.18.4", features = [
     "unicode-width",
 ], default-features = false }
 mime = "0.3.17"
-tokio = { version = "1.52.3", features = [
+tokio = { version = "1.53.2", features = [
     "rt-multi-thread",
 ], default-features = false }
 url = "2.5.8"

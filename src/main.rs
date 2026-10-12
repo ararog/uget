@@ -6,7 +6,7 @@ use deboa::cert::IdentityNativeExt as _;
 use deboa::{
     cert::{CertificateExt as _, ContentEncoding},
     errors::{DeboaError, IoError, RequestError, ResponseError},
-    form::{DeboaForm, EncodedForm, MultiPartForm},
+    form::{EncodedForm, MultiPartForm},
     request::{DeboaRequest, DeboaRequestBuilder},
     response::DeboaResponse,
     ClientBuilder, HttpClient, Result,
@@ -448,9 +448,11 @@ async fn handle_request(
         request.text(&body)
     } else if let Some(fields) = arg_fields {
         set_encoded_form(request, fields)?
-    } else if let Some(part) = arg_part {
+    }
+    /*else if let Some(part) = arg_part {
         set_multi_part_form(request, part)?
-    } else {
+    }*/
+    else {
         request
     };
 
@@ -603,9 +605,10 @@ fn set_encoded_form(
             form = form.field(key, value);
         }
     }
-    request.form(form.into())
+    Ok(request.body(form.into()))
 }
 
+/*
 fn set_multi_part_form(
     request: DeboaRequestBuilder,
     part: Vec<String>,
@@ -617,8 +620,9 @@ fn set_multi_part_form(
             form = form.field(key, value);
         }
     }
-    request.form(form.into())
+    Ok(request.body())
 }
+*/
 
 fn set_basic_auth(
     request: DeboaRequestBuilder,
