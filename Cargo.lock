@@ -384,9 +384,9 @@ checksum = "a31eee39dddec8330830986fcd7625edb5a24ec90ea038215273bbc3adb08ac6"
 
 [[package]]
 name = "deboa"
-version = "0.1.5-beta.3"
+version = "0.1.5-beta.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "695df99f6e8a191aa84884124d7bbcff1b65506e947234ac03d722578ba8742b"
+checksum = "395f954c4cfd84d010b7dc7d02ea67f24dd0af799f231c0c0a0ec293520fec46"
 dependencies = [
  "async-fn-stream",
  "async-lock",
@@ -400,7 +400,6 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-body-utils",
- "hyper-util",
  "log",
  "rand",
  "regex",
@@ -1007,15 +1006,10 @@ checksum = "ddc03d96684f9226b8a787cdb71488417b53ab5ea8fdb1dac946cb9431cc8bff"
 dependencies = [
  "bytes",
  "futures-channel",
- "futures-util",
  "http",
  "http-body",
- "httparse",
  "hyper",
- "libc",
  "pin-project-lite",
- "socket2",
- "tokio",
  "tower-service",
  "tracing",
 ]
