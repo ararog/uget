@@ -1,4 +1,8 @@
 name: Check unused deps
+
+permissions:
+    contents: read
+
 on:
     schedule:
         - cron: "10 0 * * *"
