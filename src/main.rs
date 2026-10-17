@@ -1,24 +1,20 @@
 use clap::{builder::RangedI64ValueParser, Parser};
 use colored::*;
 use colored_json::prelude::*;
-#[cfg(feature = "native-tls")]
-use deboa::cert::IdentityNativeExt as _;
-use deboa::{
-    cert::{CertificateExt as _, ContentEncoding},
-    errors::{DeboaError, IoError, RequestError, ResponseError},
-    form::{EncodedForm, MultiPartForm},
-    request::{DeboaRequest, DeboaRequestBuilder},
-    response::DeboaResponse,
-    ClientBuilder, HttpClient, Result,
-};
 use deboa_extras::hook::{
     redirect::Redirect,
     retry::{strategy::FixedIntervalRetryStrategy, Retry, Sleeper},
 };
+#[cfg(feature = "native-tls")]
+use deboa_tokio::cert::IdentityNativeExt as _;
 use deboa_tokio::{
-    cert::{DeboaCertificate, DeboaIdentity},
-    client::{dns::DefaultDnsResolver, http::conn::pool::HttpConnectionPool},
-    Client,
+    cert::{CertificateExt as _, ContentEncoding, DeboaCertificate, DeboaIdentity},
+    client::{DefaultDnsResolver, HttpConnectionPool},
+    errors::{DeboaError, IoError, RequestError, ResponseError},
+    form::EncodedForm,
+    request::{DeboaRequest, DeboaRequestBuilder},
+    response::DeboaResponse,
+    Client, ClientBuilder, HttpBody, HttpClient, MultiPartForm, Result,
 };
 use futures_util::StreamExt;
 use http::{HeaderName, Method, Version};
@@ -263,6 +259,16 @@ struct Args {
         help = "Number of times to retry the request on failure."
     )]
     retries: Option<u8>,
+    #[arg(
+        short = 'k',
+        long,
+        required = false,
+        num_args = 0..=1,
+        require_equals = true,
+        default_missing_value = "false",
+        help = "Indicate if we have prior knowledge of protocol."
+    )]
+    prior_knowledge: Option<String>,
 }
 
 #[tokio::main]
@@ -301,6 +307,7 @@ async fn handle_request(
     let arg_http = args.http;
     let arg_retries = args.retries;
     let arg_follow = args.follow;
+    let arg_prior_knowledge = args.prior_knowledge;
 
     let version = match arg_http {
         Some(value) => match value {
@@ -331,9 +338,15 @@ async fn handle_request(
         client
     };
 
+    let client = if arg_prior_knowledge.is_some() {
+        client.prior_knowledge(true)
+    } else {
+        client
+    };
+
     #[cfg(feature = "rust-tls")]
     let client = if let Some((cert, key)) = arg_cert.zip(arg_key) {
-        use deboa::cert::{ContentEncoding, IdentityExt as _};
+        use deboa_tokio::cert::{ContentEncoding, IdentityExt as _};
 
         let identity =
             DeboaIdentity::from_pkcs8_file(cert.as_str(), key.as_str(), ContentEncoding::PEM).await;
@@ -448,11 +461,9 @@ async fn handle_request(
         request.text(&body)
     } else if let Some(fields) = arg_fields {
         set_encoded_form(request, fields)?
-    }
-    /*else if let Some(part) = arg_part {
-        set_multi_part_form(request, part)?
-    }*/
-    else {
+    } else if let Some(part) = arg_part {
+        set_multi_part_form(request, part).await?
+    } else {
         request
     };
 
@@ -480,26 +491,26 @@ async fn handle_request(
         match e {
             DeboaError::Response(inner_error) => match inner_error {
                 ResponseError::Process { message } => {
-                    print!("{}", message);
+                    eprintln!("{}", message);
                     return Ok(());
                 }
                 ResponseError::Receive {
                     status_code: _,
                     message,
                 } => {
-                    print!("{}", message);
+                    eprintln!("{}", message);
                     return Ok(());
                 }
             },
             DeboaError::Request(inner_error) => match inner_error {
                 RequestError::Send { message } => {
-                    print!("{}", message);
+                    eprintln!("{}", message);
                     return Ok(());
                 }
                 _ => todo!(),
             },
             _ => {
-                println!("{}", e);
+                eprintln!("{}", e);
                 return Ok(());
             }
         }
@@ -608,8 +619,7 @@ fn set_encoded_form(
     Ok(request.body(form.into()))
 }
 
-/*
-fn set_multi_part_form(
+async fn set_multi_part_form(
     request: DeboaRequestBuilder,
     part: Vec<String>,
 ) -> Result<DeboaRequestBuilder> {
@@ -620,9 +630,10 @@ fn set_multi_part_form(
             form = form.field(key, value);
         }
     }
-    Ok(request.body())
+    let form_stream = form.build().await;
+    let builder = request.body(HttpBody::stream(form_stream));
+    Ok(builder)
 }
-*/
 
 fn set_basic_auth(
     request: DeboaRequestBuilder,
