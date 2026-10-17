@@ -1,0 +1,61 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+
+  - repo: "https://github.com/gitleaks/gitleaks"
+    rev: "v8.24.2"
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.26.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        additional_dependencies: ['@commitlint/config-conventional']      
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: "cargo fmt"
+        entry: "cargo fmt --all --check"
+        language: "system"
+        types: ["rust"]
+        pass_filenames: false
+
+      - id: cargo-nextest
+        name: "cargo nextest"
+        # Remove exports below if you don't have these tools installed
+        entry: bash -c "
+          export RUSTC_WRAPPER=kache &&
+          export RUSTC_LINKER=clang &&
+          export CARGO_BUILD_RUSTFLAGS="-C link-arg=-fuse-ld=mold" &&
+          cargo test --doc &&
+          cargo nextest run -j1
+          "
+        language: "system"
+        types: ["rust"]
+        pass_filenames: false
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.41.0
+    hooks:
+      - id: markdownlint
+        # Optional: Add --fix to automatically correct format violations
+        args: ["--fix"]
+        
+  - repo: https://github.com/EmbarkStudios/cargo-deny
+    rev: 0.19.9 # choose your preferred tag
+    hooks:
+      - id: cargo-deny
+        args: ["--all-features", "check"]
+
+  - repo: https://github.com/bnjbvr/cargo-machete
+    rev: main  # or a specific tag/commit
+    hooks:
+      - id: cargo-machete
