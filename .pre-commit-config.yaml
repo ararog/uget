@@ -3,6 +3,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^target/distrib/.*\.wxs$|.*\.wxs$
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-toml
