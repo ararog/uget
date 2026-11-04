@@ -351,9 +351,9 @@ dependencies = [
 
 [[package]]
 name = "deboa-h3"
-version = "0.1.3-beta.3"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ff824b4ef32950130f90e1bc7001d588a867021da9663e9c05d641a7b055b8c"
+checksum = "1077eed53485d5bf3f6121c734b08fbdb1ce5b0941a534c9b81880aee6640ba1"
 dependencies = [
  "bytes",
  "deboa",
@@ -366,41 +366,37 @@ dependencies = [
 
 [[package]]
 name = "deboa-multipart"
-version = "0.1.0-beta.1"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94bb25918cc515041a757e0a05acafaeef298d48ea6a84b634e4ab75b6f94c2e"
+checksum = "57e6f00ab3be26792ab0969c509b3123f88b83a1fdbf4bfd1334f7b6770cd64f"
 dependencies = [
  "async-lock",
  "async-stream",
- "base64",
  "bytes",
  "deboa",
  "futures",
  "http-body",
- "http-body-util",
  "rand",
 ]
 
 [[package]]
 name = "deboa-tls"
-version = "0.1.0-beta.5"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f71cee433cac4b3f44ef063fdf8fd6f55fc179ff7d2ddf3bb1ad7fd6c93f406"
+checksum = "b6ba7255803c2b5723a14f8c0ee3dfd72e00cb986bb996a0f9847ce9a7aa5a07"
 dependencies = [
  "deboa",
  "futures-io",
  "futures-rustls",
  "rustls",
- "rustls-native-certs",
- "rustls-pki-types",
  "webpki-roots",
 ]
 
 [[package]]
 name = "deboa-tokio"
-version = "0.1.4-beta.8"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91280d592ed64f6e8ab53461fe7cf8e667d1b1e4307faedc68f83c0c89bf506e"
+checksum = "b3a27dbfbd487e07af9da31680df88f6aa7fbe01e17beec3918ab986e52ca170"
 dependencies = [
  "async-native-tls-ext",
  "deboa",
