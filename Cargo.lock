@@ -51,9 +51,9 @@ dependencies = [
 
 [[package]]
 name = "async-lock"
-version = "3.4.2"
+version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "290f7f2596bd5b78a9fec8088ccd89180d7f9f55b94b0576823bbbdc72ee8311"
+checksum = "0876700b0d007ad25d5508865a4259c3af9af6d296bf663a0d586d0bc3369f6f"
 dependencies = [
  "event-listener",
  "event-listener-strategy",
@@ -252,7 +252,7 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "faf9468729b8cbcea668e36183cb69d317348c2e08e994829fb56ebfdfbaac34"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -305,9 +305,9 @@ dependencies = [
 
 [[package]]
 name = "deboa"
-version = "0.1.5-beta.7"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbd4900884b33396090a6f70406d81dd361fcfc15a840968172269f8aa9aa883"
+checksum = "34a5efeb46424514ea2b2f6a988cd2c0148b45e2053ae927ae11909619c5e24d"
 dependencies = [
  "async-lock",
  "base64",
@@ -351,9 +351,9 @@ dependencies = [
 
 [[package]]
 name = "deboa-h3"
-version = "0.1.3-beta.3"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ff824b4ef32950130f90e1bc7001d588a867021da9663e9c05d641a7b055b8c"
+checksum = "1077eed53485d5bf3f6121c734b08fbdb1ce5b0941a534c9b81880aee6640ba1"
 dependencies = [
  "bytes",
  "deboa",
@@ -366,41 +366,37 @@ dependencies = [
 
 [[package]]
 name = "deboa-multipart"
-version = "0.1.0-beta.1"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94bb25918cc515041a757e0a05acafaeef298d48ea6a84b634e4ab75b6f94c2e"
+checksum = "57e6f00ab3be26792ab0969c509b3123f88b83a1fdbf4bfd1334f7b6770cd64f"
 dependencies = [
  "async-lock",
  "async-stream",
- "base64",
  "bytes",
  "deboa",
  "futures",
  "http-body",
- "http-body-util",
  "rand",
 ]
 
 [[package]]
 name = "deboa-tls"
-version = "0.1.0-beta.5"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f71cee433cac4b3f44ef063fdf8fd6f55fc179ff7d2ddf3bb1ad7fd6c93f406"
+checksum = "b6ba7255803c2b5723a14f8c0ee3dfd72e00cb986bb996a0f9847ce9a7aa5a07"
 dependencies = [
  "deboa",
  "futures-io",
  "futures-rustls",
  "rustls",
- "rustls-native-certs",
- "rustls-pki-types",
  "webpki-roots",
 ]
 
 [[package]]
 name = "deboa-tokio"
-version = "0.1.4-beta.8"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91280d592ed64f6e8ab53461fe7cf8e667d1b1e4307faedc68f83c0c89bf506e"
+checksum = "b3a27dbfbd487e07af9da31680df88f6aa7fbe01e17beec3918ab986e52ca170"
 dependencies = [
  "async-native-tls-ext",
  "deboa",
@@ -468,7 +464,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1284,7 +1280,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1407,7 +1403,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1665,7 +1661,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
