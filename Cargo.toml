@@ -1,6 +1,6 @@
 [package]
 name = "uget"
-version = "0.1.10-beta.2"
+version = "0.1.10"
 edition = "2021"
 authors = ["Rogerio Araújo <rogerio.araujo@gmail.com>"]
 repository = "https://github.com/ararog/uget"
@@ -51,7 +51,6 @@ http-body-util = "0.1.5"
 indicatif = { version = "0.18.4", features = [
     "unicode-width",
 ], default-features = false }
-mime = "0.3.17"
 tokio = { version = "1.53.2", features = [
     "rt-multi-thread",
 ], default-features = false }

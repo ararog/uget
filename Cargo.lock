@@ -1044,12 +1044,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
-name = "mime"
-version = "0.3.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5848f5a9e8117cf94f2f90faac24a87ff81600ff8628c1e3deaab572e76bfa1"
-
-[[package]]
 name = "mime_typed"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1788,7 +1782,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "uget"
-version = "0.1.10-beta.2"
+version = "0.1.10"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -1800,7 +1794,6 @@ dependencies = [
  "http",
  "http-body-util",
  "indicatif",
- "mime",
  "predicates",
  "tokio",
  "url",
